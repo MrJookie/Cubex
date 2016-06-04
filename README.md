@@ -2,6 +2,7 @@
 Playing with Voxels in SDL and OpenGL
 
 ### Features (todo)
+* Perlin noise terrain generation
 * Chunking
 * Greedy meshing (merging faces)
  * Drawing only outer faces?
