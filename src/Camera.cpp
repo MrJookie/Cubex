@@ -142,7 +142,7 @@ namespace Cubex {
         }
     }
     
-    void Camera::ExtractFrustumPlanes(glm::mat4 view, glm::mat4 projection)
+    void Camera::ExtractFrustumPlanes(glm::mat4& view, glm::mat4& projection)
     {
         glm::mat4 matrix = projection * view;
 
@@ -154,12 +154,8 @@ namespace Cubex {
         m_frustum_planes[5] = glm::row(matrix, 3) - glm::row(matrix, 2); //far
         
         for(int i = 0; i < 6; ++i) {
+			//-glm:length.. because we want normals to go outside, not inside frustum
             m_frustum_planes[i] /= -glm::length(glm::vec3(m_frustum_planes[i]));
-            
-            /*
-            std::cout << "FRUSTUM: A: " << m_frustum_planes[i].x << " B: " << m_frustum_planes[i].y << " C: " << 
-            m_frustum_planes[i].z << " D: " << m_frustum_planes[i].w << std::endl;
-            */
         }
         
         m_frustum_vertices[0] = glm::vec3(threePlanesIntersectionPoint(m_frustum_planes[0], m_frustum_planes[2], m_frustum_planes[4]));
@@ -265,7 +261,7 @@ namespace Cubex {
         std::cout << "intersection of right, bottom, far is at x: " << m_frustum_vertices[7].x << " y: " << m_frustum_vertices[7].y << " z: " << m_frustum_vertices[7].z << std::endl;
     }
     
-    bool Camera::PointInFrustum(glm::vec3 center)
+    bool Camera::PointInFrustum(glm::vec3& center)
     {
         for (const auto& plane : m_frustum_planes) {
             float dist = plane.x * center.x + plane.y * center.y + plane.z * center.z + plane.w;
@@ -276,7 +272,7 @@ namespace Cubex {
         return true;
     }
     
-    bool Camera::SphereInFrustum(glm::vec3 center, float radius)
+    bool Camera::SphereInFrustum(glm::vec3& center, float radius)
     {
         for (const auto& plane : m_frustum_planes) {
             float dist = plane.x * center.x + plane.y * center.y + plane.z * center.z + plane.w - radius;
@@ -284,6 +280,73 @@ namespace Cubex {
                 return false;
             }
         }
+        return true;
+    }
+    
+    /*
+    //doesnt work
+    bool Camera::CubeInFrustum(float x, float y, float z, float size)
+    {
+		for (const auto& plane : m_frustum_planes) {
+			if(plane.x * (x - size) + plane.y * (y - size) + plane.z * (z - size) + plane.w > 0)
+				continue;
+			if(plane.x * (x + size) + plane.y * (y - size) + plane.z * (z - size) + plane.w > 0)
+				continue;
+			if(plane.x * (x - size) + plane.y * (y + size) + plane.z * (z - size) + plane.w > 0)
+				continue;
+			if(plane.x * (x + size) + plane.y * (y + size) + plane.z * (z - size) + plane.w > 0)
+				continue;
+			if(plane.x * (x - size) + plane.y * (y - size) + plane.z * (z + size) + plane.w > 0)
+				continue;
+			if(plane.x * (x + size) + plane.y * (y - size) + plane.z * (z + size) + plane.w > 0)
+				continue;
+			if(plane.x * (x - size) + plane.y * (y + size) + plane.z * (z + size) + plane.w > 0)
+				continue;
+			if(plane.x * (x + size) + plane.y * (y + size) + plane.z * (z + size) + plane.w > 0)
+				continue;
+				
+			return false;
+		}
+		return true;
+	}
+	*/
+	
+	bool Camera::AABBIntersectsFrustum(glm::vec3& mins, glm::vec3& maxs)
+    {
+		glm::vec3 vmin;
+		glm::vec3 vmax;
+						
+        for(const auto& plane : m_frustum_planes) {
+		  if(plane.x > 0) { 
+			 vmin.x = mins.x; 
+			 vmax.x = maxs.x; 
+		  } else { 
+			 vmin.x = maxs.x; 
+			 vmax.x = mins.x; 
+		  } 
+
+		  if(plane.y > 0) { 
+			 vmin.y = mins.y; 
+			 vmax.y = maxs.y; 
+		  } else { 
+			 vmin.y = maxs.y; 
+			 vmax.y = mins.y; 
+		  } 
+
+		  if(plane.z > 0) { 
+			 vmin.z = mins.z; 
+			 vmax.z = maxs.z; 
+		  } else { 
+			 vmin.z = maxs.z; 
+			 vmax.z = mins.z; 
+		  } 
+		  
+		  if(glm::dot(glm::vec3(plane.x, plane.y, plane.z), vmin) + plane.w > 0) 
+			 return false; 
+		  if(glm::dot(glm::vec3(plane.x, plane.y, plane.z), vmax) + plane.w >= 0) 
+		  	 return true; 
+        }
+        
         return true;
     }
     

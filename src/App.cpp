@@ -24,7 +24,6 @@ App::~App() {}
 void App::init()
 {
 	SDL_Window* window;
-    SDL_Renderer* renderer;
     SDL_GLContext glContext;
  
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -34,12 +33,6 @@ void App::init()
     window = SDL_CreateWindow("Cubex", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_sizeX, m_sizeY, SDL_WINDOW_OPENGL);
     if(window == nullptr) {
         throw std::string("Failed to create window: ") + SDL_GetError();
-    }
-    
-    
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if(renderer == nullptr) {
-        throw std::string("Failed to create renderer: ") + SDL_GetError();
     }
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -60,7 +53,7 @@ void App::init()
         throw std::string("Failed to create GLContext: ") + SDL_GetError();
     }
 
-    //SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(0);
     SDL_GL_MakeCurrent(window, glContext);
     
     glewExperimental = GL_TRUE; 
@@ -83,77 +76,52 @@ void App::init()
     
     cx::Camera camera(glm::vec3(0.0f, 150.0f, 50.0f));
     
-    int WORLD_SIZE = 256;
-    int CHUNK_SIZE = 16;
+    //int WORLD_SIZE = 16;
+    //int CHUNK_SIZE = 16;
     
-    cx::World world(WORLD_SIZE, CHUNK_SIZE);
-	
-	SDL_PixelFormat *fmt;
-	SDL_Color *color;
-	Uint8 index;
-	
-	SDL_Surface *textureSurface = IMG_Load("Assets/heightmap.png");
-	if(!textureSurface) {
-		throw std::string("couldnt load heightmap");
-	}
-	
-	    
+    cx::World world;
+    
+    std::vector<cx::Chunk*> chunks;
+
     module::Perlin noise;
     noise.SetOctaveCount(1);
     noise.SetFrequency(1.0);
     noise.SetPersistence(0.1);
     noise.SetSeed(0);
-	
-	for (int z = 0; z < WORLD_SIZE; ++z)
-	{
-		for (int x = 0; x < WORLD_SIZE; ++x)
-		{
-			int Height = (0.5 + 0.5 * noise.GetValue (x / (float)WORLD_SIZE, z / (float)WORLD_SIZE, 0.0) ) * WORLD_SIZE;
-			
-			for (int y = 0; y < Height; ++y)
-			{
-				world.GetBlock(x, y, z) = 1;
+    
+    for(int l = 0; l < 1; l++) {
+		cx::Chunk* chunk = new cx::Chunk;
+
+		int chunkHeight = 0;
+		for (int z = 0; z < chunk->CHUNK_SIZE; ++z) {
+			for (int x = 0; x < chunk->CHUNK_SIZE; ++x) {
+				int height = (0.5 + 0.5 * noise.GetValue (x / (float)chunk->CHUNK_SIZE, z / (float)chunk->CHUNK_SIZE, 0.0) ) * chunk->CHUNK_SIZE;
+				
+				if(height > chunkHeight) {
+					chunkHeight = height;
+				}
+				
+				for (int y = 0; y < height; ++y) {
+					(*chunk)(x, y, z) = 1;
+				}
 			}
 		}
+		
+		chunk->m_boundingBoxMin = glm::vec3(0, 0, 0);
+		chunk->m_boundingBoxMax = glm::vec3(chunk->CHUNK_SIZE, chunkHeight, chunk->CHUNK_SIZE);
+		
+		/*
+		(*chunk)(0, 0, 0) = 2;
+		(*chunk)(1, 0, 0) = 2;
+		(*chunk)(2, 0, 0) = 2;
+		*/
+
+		//chunk->CreateMesh(l);
+		chunk->CreateGreedyMesh();
+		
+		chunks.push_back(chunk);
 	}
 	
-	/*
-	int cubesLoaded = 0;
-	for (int z = 0; z < WORLD_SIZE; ++z)
-	{
-		for (int x = 0; x < WORLD_SIZE; ++x)
-		{
-			Uint8 *p = (Uint8 *)textureSurface->pixels + z * textureSurface->pitch + x * textureSurface->format->BytesPerPixel;
-			Uint8 r,g,b;
-			SDL_GetRGB(*(Uint32 *)p,textureSurface->format, &r, &g, &b);
-			
-			//float Height = (r+g+b)/3.0;
-			
-			float Height = (0.30*r + 0.59*g + 0.11*b) / 3.0;
-						
-			for (int y = 0; y <= Height; ++y)
-			{
-				world.GetBlock(x, y, z) = 1;
-				cubesLoaded++;
-			}
-		}
-	}
-	std::cout << "cubes loaded: " << cubesLoaded << std::endl;
-    */
-    
-    /*
-    world.GetBlock(0, 0, 0) = 1;
-    
-    world.GetBlock(2, 0, 0) = 1;
-    world.GetBlock(2, 0, 1) = 1;
-    
-    world.GetBlock(4, 0, 0) = 1;
-    world.GetBlock(4, 0, 1) = 1;
-    world.GetBlock(4, 0, 2) = 1;
-    */
-    
-    world.BuildWorld();
-        
     bool toggleMouseRelative = false;
     bool toggleFullscreen = true;
     bool toggleWireframe = true;
@@ -170,7 +138,7 @@ void App::init()
     bool running = true;
     
     int ax = 0;
-
+    
     while(running)
     {
 		this->loop();
@@ -189,10 +157,6 @@ void App::init()
                     {       
                         if(toggleFullscreen) {
                             SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-                            
-                            //glViewport(0, 0, 1024, 768);
-                            //GLint viewport[4];
-                            //glGetIntegerv(GL_VIEWPORT, viewport);
                             
                             int w, h;
                             SDL_GetWindowSize(window, &w, &h);
@@ -234,6 +198,13 @@ void App::init()
                         }
                     }
                     break;
+                    
+                    case SDLK_r:
+                    {
+						(*chunks[0])(ax++, 0, 0) = 0;
+						chunks[0]->CreateMesh(0);
+					}
+					break;
                 }
             }
             else if(e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT) {
@@ -271,7 +242,7 @@ void App::init()
         if(state[SDL_SCANCODE_A]) {
             camera.ProcessKeyboard(cx::Camera::MoveDirection::LEFT, getDeltaTime() * 2.0);
         }
-        
+
         if(state[SDL_SCANCODE_D]) {
             camera.ProcessKeyboard(cx::Camera::MoveDirection::RIGHT, getDeltaTime() * 2.0);
         }
@@ -296,192 +267,97 @@ void App::init()
         
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), m_sizeX/(float)m_sizeY, 0.1f, 1000.0f);
-        
-        glm::mat4 model;
-        model = glm::translate(model, glm::vec3(0.0, 0.0, 0.0));
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, 0.0));
 
-        //world.DrawWorld(shaders[0]->GetShader(), model, view, projection);
-        
         camera.ExtractFrustumPlanes(view, projection);
         
-        glm::vec3 cam = camera.GetPosition();
-        //std::cout << world.chunks.size() << std::endl;
+        //std::cout << "AABB intersects: " << camera.AABBIntersectsFrustum(chunk.m_boundingBoxMin, chunk.m_boundingBoxMax) << std::endl;
         
-        /*
-        for(int i = 0; i < 1; ++i) {
-			for (int z = 0; z < CHUNK_SIZE; ++z)
-			{
-				for (int x = 0; x < CHUNK_SIZE; ++x)
-				{		
-					for (int y = 0; y <= CHUNK_SIZE; ++y)
-					{
-						if(world.GetBlock(x, y, z) == 1) {
-							if(camera.PointInFrustum(glm::vec3(x, y, z))) {
-								world.drawChunk(glm::vec3(1.0, 0.0, 0.0), world.chunks[0], shaders[0]->GetShader(), model, view, projection);
-								break;
-							}
-						}
-					}
-				}
-			}
-		}
-		*/
-		
-		for(int i = 0; i < world.chunks.size(); ++i) {
-			world.drawChunk(glm::vec3(1.0, 0.0, 0.0), world.chunks[i], shaders[0]->GetShader(), model, view, projection);
-		}
-		
-		/*
-		std::vector<glm::vec3> pointsPositions;
-		std::vector<glm::vec3> pointsColors;
-
-		pointsPositions.push_back(glm::vec3(0, 0, 0));
-		pointsPositions.push_back(glm::vec3(0.0, 1.0, 0.0));
-		
-		glUseProgram(shaders[1]->GetShader());
-        glEnable(GL_PROGRAM_POINT_SIZE);
-        
-        GLuint vao_0, vbo_0, vbo_1;
-        glGenVertexArrays(1, &vao_0);
-        glBindVertexArray(vao_0);
-        glGenBuffers(1, &vbo_0);
-        glGenBuffers(1, &vbo_1);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_0);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * pointsPositions.size(), &pointsPositions[0], GL_DYNAMIC_DRAW);
-        glEnableVertexAttribArray(0);    
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_1);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * pointsColors.size(), &pointsColors[0], GL_DYNAMIC_DRAW);
-        glEnableVertexAttribArray(1);    
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-        
-        glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));        
-
-        glDrawArrays(GL_POINTS, 0, pointsPositions.size());
-        glBindVertexArray(0);
-        
-        glDeleteVertexArrays(1, &vao_0);
-        glDeleteBuffers(1, &vbo_0);
-        glDeleteBuffers(1, &vbo_1);
-        
-        glDisable(GL_PROGRAM_POINT_SIZE);
-        glUseProgram(0);
-		*/
-        
-        /*
-        for(int i = 0; i < world.chunks.size(); ++i) {
-			//world.drawChunk(glm::vec3(1.0, 1.0, 1.0), world.chunks[i], shaders[0]->GetShader(), model, view, projection);
+        for(int i = 0; i < chunks.size(); ++i) {
+			//if(camera.AABBIntersectsFrustum(chunks[i]->m_boundingBoxMin, chunks[i]->m_boundingBoxMax)) {
+				chunks[i]->DrawChunk(glm::vec3(1.0, 0.0, 0.0), shaders[0]->GetShader(), model, view, projection);
+			//}
 			
+			
+			GLubyte indices[] = {0, 1, 1, 5, 5, 4, 4, 0,
+								 2, 3, 3, 7, 7, 6, 6, 2,
+								 0, 2, 1, 3, 5, 7, 4, 6,
+			};
+			
+			GLfloat colors[] = {1.0, 1.0, 1.0,
+								1.0, 1.0, 1.0,
+								1.0, 1.0, 1.0,
+								1.0, 1.0, 1.0,
+								1.0, 1.0, 1.0,
+								1.0, 1.0, 1.0,
+								1.0, 1.0, 1.0,
+								1.0, 1.0, 1.0,
+			};
+        
+			glm::vec3 m_boundingBoxVertices[8];
+			m_boundingBoxVertices[0] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMin().z);
+			m_boundingBoxVertices[1] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMax().z);
+			m_boundingBoxVertices[2] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMin().z);
+			m_boundingBoxVertices[3] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMax().z);
+			m_boundingBoxVertices[4] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMin().z);
+			m_boundingBoxVertices[5] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMax().z);
+			m_boundingBoxVertices[6] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMin().z);
+			m_boundingBoxVertices[7] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMax().z);
+        
+			std::vector<glm::vec3> bbox;
+			bbox.push_back(m_boundingBoxVertices[0]);
+			bbox.push_back(m_boundingBoxVertices[1]);
+			bbox.push_back(m_boundingBoxVertices[2]);
+			bbox.push_back(m_boundingBoxVertices[3]);
+			bbox.push_back(m_boundingBoxVertices[4]);
+			bbox.push_back(m_boundingBoxVertices[5]);
+			bbox.push_back(m_boundingBoxVertices[6]);
+			bbox.push_back(m_boundingBoxVertices[7]);
+			
+			
+			glUseProgram(shaders[0]->GetShader());
+			
+			glEnable(GL_PROGRAM_POINT_SIZE);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			
+			GLuint vao_0, vbo_0, vbo_1;
+			
+			glGenVertexArrays(1, &vao_0);
+			glGenBuffers(1, &vbo_0);
+			glGenBuffers(1, &vbo_1);
+			
+			glBindVertexArray(vao_0);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_0);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bbox.size(), &bbox[0], GL_DYNAMIC_DRAW);
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+			
+			glBindBuffer(GL_ARRAY_BUFFER, vbo_1);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_DYNAMIC_DRAW);
+			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+			
+			glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "model"), 1, GL_FALSE, glm::value_ptr(model));
+			glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "view"), 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+			
+			//glDrawArrays(GL_POINTS, 0, 8);
+			glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, indices);
 		
-			if((cam.x > world.chunks[i].startX && cam.x < world.chunks[i].startX + CHUNK_SIZE)
-			&& (cam.z > world.chunks[i].startZ && cam.z < world.chunks[i].startZ + CHUNK_SIZE))
-			{
-				int drawChunk;
-
-				for(int j = i; j < i+9*16; j = j+16) {
-					drawChunk = j - 4;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j - 3;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j - 2;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j - 1;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 0;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(1.0, 1.0, 1.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 1;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 2;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 3;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 4;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-				}
-				
-				
-				for(int j = i; j > i-9*16; j = j-16) {
-					drawChunk = j - 4;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j - 3;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j - 2;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j - 1;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 0;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(1.0, 1.0, 1.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 1;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 2;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 3;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-					
-					drawChunk = j + 4;
-					if(drawChunk >= 0 && drawChunk < world.chunks.size()) {
-						world.drawChunk(glm::vec3(0.0, 1.0, 0.0), world.chunks[drawChunk], shaders[0]->GetShader(), model, view, projection);
-					}
-				}
-
-				//break;
-			}
+			glBindVertexArray(0);
+			
+			glDeleteVertexArrays(1, &vao_0);
+			glDeleteBuffers(1, &vbo_0);
+			glDeleteBuffers(1, &vbo_1);
+			
+			glDisable(GL_PROGRAM_POINT_SIZE);
+			glDisable(GL_BLEND);
+			
+			glUseProgram(0);
 		}
-		*/
-
+	
         SDL_GL_SwapWindow(window);
         
         this->showFPS();

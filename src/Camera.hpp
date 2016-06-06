@@ -37,9 +37,11 @@ namespace Cubex {
             glm::vec3 GetPosition() const;
             void ToggleLockY();
             
-            void ExtractFrustumPlanes(glm::mat4 view, glm::mat4 projection);
-            bool PointInFrustum(glm::vec3 center);
-            bool SphereInFrustum(glm::vec3 center, float radius);
+            void ExtractFrustumPlanes(glm::mat4& view, glm::mat4& projection);
+            bool PointInFrustum(glm::vec3& center);
+            bool SphereInFrustum(glm::vec3& center, float radius);
+            //bool CubeInFrustum(float x, float y, float z, float size);
+            bool AABBIntersectsFrustum(glm::vec3& mins, glm::vec3& maxs);
             void PrintFrustumVerticesPositions();
             void DrawFrustum(glm::mat4 model, glm::mat4 view, glm::mat4 projection, GLuint shader);
             

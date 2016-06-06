@@ -15,6 +15,7 @@ cpp := 	\
 		src/Shader.cpp									\
 		src/Camera.cpp									\
 		src/World.cpp									\
+		src/Chunk.cpp									\
 
 exe := Cubex
 
