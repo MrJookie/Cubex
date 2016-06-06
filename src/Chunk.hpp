@@ -34,16 +34,18 @@ namespace Cubex {
 			
 			//rebuild()
 			
-			void addFace(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int n, bool backFace);
+			void CreateMesh(int chunkID, bool optimize);
 			void CreateGreedyMesh();
-			
-			void CreateMesh(int chunkID);
 			void CreateCube(int x, int y, int z, bool Xneg, bool Xpos, bool Yneg, bool Ypos, bool Zneg, bool Zpos);
+			
+			void addFace(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int n, bool backFace);
 			void DrawChunk(glm::vec3 color, GLuint shader, glm::mat4 model, glm::mat4 view, glm::mat4 projection);
+			
+			int GetVertexCount() const;
 			
 			//int& getBlockSide(const int x, const int y, const int z);
 						
-			static const int CHUNK_SIZE = 128;
+			static const int CHUNK_SIZE = 16;
 			//static const int BLOCK_SIZE = 1;
 			
 			int* m_blocks;
@@ -54,6 +56,9 @@ namespace Cubex {
 			
 			glm::vec3 m_boundingBoxMin;
 			glm::vec3 m_boundingBoxMax;
+			
+			glm::vec3 getAABBCubeMin(const int x, const int y, const int z);
+			glm::vec3 getAABBCubeMax(const int x, const int y, const int z);
 									
 		private:
 			void initBuffers();

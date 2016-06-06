@@ -5,9 +5,8 @@ Playing with Voxels in SDL and OpenGL
 * Perlin noise terrain generation
 * Chunking
 * Greedy meshing (merging faces)
- * Drawing only outer faces?
 * Selecting cubes/faces
 * Adding/removing cubes -> rebuilding chunks
-* Octree/frustum culling
+* Frustum culling
 
 ![alt tag](preview.png)

@@ -45,7 +45,7 @@ namespace Cubex {
 		return m_blocks[index];
 	}
 	
-	void Chunk::CreateMesh(int chunkID)
+	void Chunk::CreateMesh(int chunkID, bool optimize)
 	{
 		vertices.clear();
 		indices.clear();
@@ -58,7 +58,7 @@ namespace Cubex {
 		using milli = std::chrono::milliseconds;
 		auto start = std::chrono::high_resolution_clock::now();
 		
-		bool displayInnerFaces = false;
+		bool displayInnerFaces = optimize;
 		bool displayChunkFaces = true;
 		
 		for (int x = 0; x < CHUNK_SIZE; x++) {
@@ -576,14 +576,12 @@ namespace Cubex {
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(glm::ivec3) * indices.size(), &indices[0], GL_STATIC_DRAW);
 		
 		glBindVertexArray(0);
-		
-		std::cout << vertices.size() << std::endl;
 	}
 	
 	void Chunk::DrawChunk(glm::vec3 color, GLuint shader, glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 	{
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
+		//glEnable(GL_CULL_FACE);
 			
 		glUseProgram(shader);
 		glBindVertexArray(vao);
@@ -616,6 +614,30 @@ namespace Cubex {
 	glm::vec3 Chunk::getBoundingBoxMax() const
 	{
 		return m_boundingBoxMax;
+	}
+	
+	int Chunk::GetVertexCount() const
+	{
+		return vertices.size();
+		//or return lastVertex;
+	}
+	
+	glm::vec3 Chunk::getAABBCubeMin(const int x, const int y, const int z)
+	{
+		if((*this)(x, y, z) > 0) {
+			return glm::vec3(x, y, z);
+		}
+		
+		return glm::vec3(0);
+	}
+	
+	glm::vec3 Chunk::getAABBCubeMax(const int x, const int y, const int z)
+	{
+		if((*this)(x, y, z) > 0) {
+			return glm::vec3(x + 1, y + 1, z + 1);
+		}
+		
+		return glm::vec3(0);
 	}
 }
 

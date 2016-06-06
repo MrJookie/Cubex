@@ -115,9 +115,15 @@ void App::init()
 		(*chunk)(1, 0, 0) = 2;
 		(*chunk)(2, 0, 0) = 2;
 		*/
-
-		//chunk->CreateMesh(l);
+		
+		if(l == 1)
 		chunk->CreateGreedyMesh();
+		else if(l == 0)
+		chunk->CreateMesh(l, false);
+		else
+		chunk->CreateMesh(l, true);
+		
+		std::cout << "verts: " << chunk->GetVertexCount() << std::endl;
 		
 		chunks.push_back(chunk);
 	}
@@ -202,7 +208,7 @@ void App::init()
                     case SDLK_r:
                     {
 						(*chunks[0])(ax++, 0, 0) = 0;
-						chunks[0]->CreateMesh(0);
+						chunks[0]->CreateMesh(0, true);
 					}
 					break;
                 }
@@ -250,6 +256,10 @@ void App::init()
         int xpos;
         int ypos;
         SDL_GetRelativeMouseState(&xpos, &ypos);
+        
+        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), m_sizeX/(float)m_sizeY, 0.1f, 1000.0f);
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, 0.0));
 
         if(skipMouseResolution > 0 && (xpos != 0 || ypos != 0)) {
             skipMouseResolution--; 
@@ -262,12 +272,21 @@ void App::init()
                 int xpos;
                 int ypos;
                 SDL_GetMouseState(&xpos, &ypos);
+                
+                //std::cout << xpos << " " << ypos << std::endl;
+                
+                /*
+                GLint viewport[4];
+				glGetIntegerv(GL_VIEWPORT, viewport);
+                
+                glm::vec3 point_far = ScreenToWorld(glm::vec3(xpos, ypos, 1.0), view, projection);
+                glm::vec3 ray_origin = ScreenToWorld(glm::vec3(xpos, ypos, 0.0), view, projection);
+                glm::vec3 ray_direction = point_far-ray_origin;
+                */
             }
         };
         
-        glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), m_sizeX/(float)m_sizeY, 0.1f, 1000.0f);
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, 0.0));
+        
 
         camera.ExtractFrustumPlanes(view, projection);
         
@@ -293,7 +312,8 @@ void App::init()
 								1.0, 1.0, 1.0,
 								1.0, 1.0, 1.0,
 			};
-        
+			
+			/*
 			glm::vec3 m_boundingBoxVertices[8];
 			m_boundingBoxVertices[0] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMin().z);
 			m_boundingBoxVertices[1] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMax().z);
@@ -303,59 +323,112 @@ void App::init()
 			m_boundingBoxVertices[5] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMax().z);
 			m_boundingBoxVertices[6] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMin().z);
 			m_boundingBoxVertices[7] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMax().z);
-        
-			std::vector<glm::vec3> bbox;
-			bbox.push_back(m_boundingBoxVertices[0]);
-			bbox.push_back(m_boundingBoxVertices[1]);
-			bbox.push_back(m_boundingBoxVertices[2]);
-			bbox.push_back(m_boundingBoxVertices[3]);
-			bbox.push_back(m_boundingBoxVertices[4]);
-			bbox.push_back(m_boundingBoxVertices[5]);
-			bbox.push_back(m_boundingBoxVertices[6]);
-			bbox.push_back(m_boundingBoxVertices[7]);
+			*/
 			
 			
-			glUseProgram(shaders[0]->GetShader());
 			
-			glEnable(GL_PROGRAM_POINT_SIZE);
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			int xpos;
+			int ypos;
+			SDL_GetMouseState(&xpos, &ypos);
 			
-			GLuint vao_0, vbo_0, vbo_1;
+			//std::cout << xpos << " " << ypos << std::endl;
 			
-			glGenVertexArrays(1, &vao_0);
-			glGenBuffers(1, &vbo_0);
-			glGenBuffers(1, &vbo_1);
+			glm::vec4 viewport = glm::vec4(0.0f, 0.0f, this->getSizeX(), this->getSizeY());
+			glm::vec3 v0 = glm::unProject(glm::vec3(xpos, ypos, 0.0f), view, projection, viewport);
+			glm::vec3 v1 = glm::unProject(glm::vec3(xpos, this->getSizeY() - ypos, 1.0f), view, projection, viewport);
+			glm::vec3 dir = v1 - v0; 
 			
-			glBindVertexArray(vao_0);
+			glm::vec3 AABBmin;
+			glm::vec3 AABBmax;
+			glm::vec3 cube;
+				
+			std::vector<glm::vec3> cubesFound;
 			
-			glBindBuffer(GL_ARRAY_BUFFER, vbo_0);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bbox.size(), &bbox[0], GL_DYNAMIC_DRAW);
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-			
-			glBindBuffer(GL_ARRAY_BUFFER, vbo_1);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_DYNAMIC_DRAW);
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-			
-			glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "model"), 1, GL_FALSE, glm::value_ptr(model));
-			glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "view"), 1, GL_FALSE, glm::value_ptr(view));
-			glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-			
-			//glDrawArrays(GL_POINTS, 0, 8);
-			glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, indices);
+			for(int x = 0; x < chunks[i]->CHUNK_SIZE; ++x) {
+				for(int y = 0; y < chunks[i]->CHUNK_SIZE; ++y) {
+					for(int z = 0; z < chunks[i]->CHUNK_SIZE; ++z) {
+						cube = glm::vec3(x,y,z);
+						AABBmin = chunks[i]->getAABBCubeMin(cube.x, cube.y, cube.z);
+						AABBmax = chunks[i]->getAABBCubeMax(cube.x, cube.y, cube.z);
+						
+						if(RayAABBIntersect(v0, dir, AABBmin, AABBmax)) {
+							if(cubesFound.size() < 1) {
+								cubesFound.push_back(cube);
+							} else {
+								if(glm::distance(cube, camera.GetPosition()) < glm::distance(cubesFound[0], camera.GetPosition()))
+								cubesFound[0] = cube;
+							}
+							
+							//std::cout << "ray doesnt intersect" << std::endl;
+						}
+					}
+				}
+			}
 		
-			glBindVertexArray(0);
+			for(int j = 0; j < cubesFound.size(); ++j) {
+				glm::vec3 m_boundingBoxVertices[8];
+				m_boundingBoxVertices[0] = glm::vec3(chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
+				m_boundingBoxVertices[1] = glm::vec3(chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
+				m_boundingBoxVertices[2] = glm::vec3(chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
+				m_boundingBoxVertices[3] = glm::vec3(chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
+				m_boundingBoxVertices[4] = glm::vec3(chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
+				m_boundingBoxVertices[5] = glm::vec3(chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
+				m_boundingBoxVertices[6] = glm::vec3(chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
+				m_boundingBoxVertices[7] = glm::vec3(chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
 			
-			glDeleteVertexArrays(1, &vao_0);
-			glDeleteBuffers(1, &vbo_0);
-			glDeleteBuffers(1, &vbo_1);
+				std::vector<glm::vec3> bbox;
+				bbox.push_back(m_boundingBoxVertices[0]);
+				bbox.push_back(m_boundingBoxVertices[1]);
+				bbox.push_back(m_boundingBoxVertices[2]);
+				bbox.push_back(m_boundingBoxVertices[3]);
+				bbox.push_back(m_boundingBoxVertices[4]);
+				bbox.push_back(m_boundingBoxVertices[5]);
+				bbox.push_back(m_boundingBoxVertices[6]);
+				bbox.push_back(m_boundingBoxVertices[7]);
+				
+				
+				glUseProgram(shaders[0]->GetShader());
+				
+				glEnable(GL_PROGRAM_POINT_SIZE);
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				
+				GLuint vao_0, vbo_0, vbo_1;
+				
+				glGenVertexArrays(1, &vao_0);
+				glGenBuffers(1, &vbo_0);
+				glGenBuffers(1, &vbo_1);
+				
+				glBindVertexArray(vao_0);
+				
+				glBindBuffer(GL_ARRAY_BUFFER, vbo_0);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bbox.size(), &bbox[0], GL_DYNAMIC_DRAW);
+				glEnableVertexAttribArray(0);
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+				
+				glBindBuffer(GL_ARRAY_BUFFER, vbo_1);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_DYNAMIC_DRAW);
+				glEnableVertexAttribArray(1);
+				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+				
+				glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "model"), 1, GL_FALSE, glm::value_ptr(model));
+				glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "view"), 1, GL_FALSE, glm::value_ptr(view));
+				glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+				
+				//glDrawArrays(GL_POINTS, 0, 8);
+				glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, indices);
 			
-			glDisable(GL_PROGRAM_POINT_SIZE);
-			glDisable(GL_BLEND);
-			
-			glUseProgram(0);
+				glBindVertexArray(0);
+				
+				glDeleteVertexArrays(1, &vao_0);
+				glDeleteBuffers(1, &vbo_0);
+				glDeleteBuffers(1, &vbo_1);
+				
+				glDisable(GL_PROGRAM_POINT_SIZE);
+				glDisable(GL_BLEND);
+				
+				glUseProgram(0);
+			}
 		}
 	
         SDL_GL_SwapWindow(window);
@@ -399,6 +472,68 @@ void App::showFPS()
         std::cout << "FPS: " << m_frames_current << std::endl;
     }
 }
+
+glm::vec3 App::ScreenToWorld(glm::vec3 screen, glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
+{
+	GLint viewPort[4];
+	glGetIntegerv(GL_VIEWPORT, viewPort);
+	
+    // compute the inverse of the view and projection matrix
+    glm::mat4 m = glm::inverse(viewMatrix * projectionMatrix);
+ 
+    // transform the screen space co-ordinates into values normalized between -1 and +1
+    glm::vec4 input;
+    input.x = (screen.x - (float)viewPort[0]) / (float)viewPort[2] * 2.0f - 1.0f;
+    input.y = (screen.y - (float)viewPort[1]) / (float)viewPort[3] * 2.0f - 1.0f;
+    input.z = 2.0f * screen.z - 1.0f;
+    input.w = 1.0f;
+ 
+    // return the object co-ordinates
+    glm::vec4 output = input * m;
+    if (output[3] == 0.0) return glm::vec3(0);
+ 
+    float scale = 1.0f / output.w;
+ 
+    return glm::vec3(output.x * scale, output.y * scale, output.z * scale);
+}
+
+bool App::RayAABBIntersect(glm::vec3 rayOrig, glm::vec3 rayDir, glm::vec3 min, glm::vec3 max) 
+{ 
+    float tmin = (min.x - rayOrig.x) / rayDir.x; 
+    float tmax = (max.x - rayOrig.x) / rayDir.x; 
+ 
+    if (tmin > tmax) std::swap(tmin, tmax); 
+ 
+    float tymin = (min.y - rayOrig.y) / rayDir.y; 
+    float tymax = (max.y - rayOrig.y) / rayDir.y; 
+ 
+    if (tymin > tymax) std::swap(tymin, tymax); 
+ 
+    if ((tmin > tymax) || (tymin > tmax)) 
+        return false; 
+ 
+    if (tymin > tmin) 
+        tmin = tymin; 
+ 
+    if (tymax < tmax) 
+        tmax = tymax; 
+ 
+    float tzmin = (min.z - rayOrig.z) / rayDir.z; 
+    float tzmax = (max.z - rayOrig.z) / rayDir.z; 
+ 
+    if (tzmin > tzmax) std::swap(tzmin, tzmax); 
+ 
+    if ((tmin > tzmax) || (tzmin > tmax)) 
+        return false; 
+ 
+    if (tzmin > tmin) 
+        tmin = tzmin; 
+ 
+    if (tzmax < tmax) 
+        tmax = tzmax; 
+ 
+    return true; 
+} 
 
 int App::getSizeX() const
 {
