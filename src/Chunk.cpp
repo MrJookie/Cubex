@@ -127,12 +127,12 @@ namespace Cubex {
 		using milli = std::chrono::milliseconds;
 		auto start = std::chrono::high_resolution_clock::now();
 		
-		int Xneg      = 0;
-		int Xpos      = 1;
-		int Yneg      = 2;
-		int Ypos      = 3;
-		int Zneg      = 4;
-		int Zpos      = 5;
+		int Xneg = 0;
+		int Xpos = 1;
+		int Yneg = 2;
+		int Ypos = 3;
+		int Zneg = 4;
+		int Zpos = 5;
 		
 		int i, j, k, l, w, h, u, v, n, side = 0;
             

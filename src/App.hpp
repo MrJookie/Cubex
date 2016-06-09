@@ -32,8 +32,7 @@ class App {
         App();
         ~App();
         
-        glm::vec3 ScreenToWorld(glm::vec3 screen, glm::mat4 viewMatrix, glm::mat4 projectionMatrix);
-        bool RayAABBIntersect(glm::vec3 rayOrig, glm::vec3 rayDir, glm::vec3 min, glm::vec3 max);
+        bool RayAABBIntersect(const glm::vec3& rayOrig, const glm::vec3& rayDir, const glm::vec3& min, const glm::vec3& max);
         
     private:
         void init();

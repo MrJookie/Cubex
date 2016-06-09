@@ -114,11 +114,13 @@ void App::init()
 		(*chunk)(0, 0, 0) = 2;
 		(*chunk)(1, 0, 0) = 2;
 		(*chunk)(2, 0, 0) = 2;
+		
+		(*chunk)(4, 0, 0) = 2;
 		*/
 		
-		if(l == 1)
+		if(l == 0)
 		chunk->CreateGreedyMesh();
-		else if(l == 0)
+		else if(l == 1)
 		chunk->CreateMesh(l, false);
 		else
 		chunk->CreateMesh(l, true);
@@ -257,10 +259,6 @@ void App::init()
         int ypos;
         SDL_GetRelativeMouseState(&xpos, &ypos);
         
-        glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), m_sizeX/(float)m_sizeY, 0.1f, 1000.0f);
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, 0.0));
-
         if(skipMouseResolution > 0 && (xpos != 0 || ypos != 0)) {
             skipMouseResolution--; 
         }
@@ -269,24 +267,17 @@ void App::init()
 				camera.ProcessMouseMovement(xpos, ypos);
             }
             else {
-                int xpos;
-                int ypos;
+                //int xpos;
+                //int ypos;
                 SDL_GetMouseState(&xpos, &ypos);
                 
                 //std::cout << xpos << " " << ypos << std::endl;
-                
-                /*
-                GLint viewport[4];
-				glGetIntegerv(GL_VIEWPORT, viewport);
-                
-                glm::vec3 point_far = ScreenToWorld(glm::vec3(xpos, ypos, 1.0), view, projection);
-                glm::vec3 ray_origin = ScreenToWorld(glm::vec3(xpos, ypos, 0.0), view, projection);
-                glm::vec3 ray_direction = point_far-ray_origin;
-                */
             }
-        };
+        }
         
-        
+        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), m_sizeX/(float)m_sizeY, 0.1f, 1000.0f);
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, 0.0));
 
         camera.ExtractFrustumPlanes(view, projection);
         
@@ -297,137 +288,208 @@ void App::init()
 				chunks[i]->DrawChunk(glm::vec3(1.0, 0.0, 0.0), shaders[0]->GetShader(), model, view, projection);
 			//}
 			
-			
-			GLubyte indices[] = {0, 1, 1, 5, 5, 4, 4, 0,
-								 2, 3, 3, 7, 7, 6, 6, 2,
-								 0, 2, 1, 3, 5, 7, 4, 6,
-			};
-			
-			GLfloat colors[] = {1.0, 1.0, 1.0,
-								1.0, 1.0, 1.0,
-								1.0, 1.0, 1.0,
-								1.0, 1.0, 1.0,
-								1.0, 1.0, 1.0,
-								1.0, 1.0, 1.0,
-								1.0, 1.0, 1.0,
-								1.0, 1.0, 1.0,
-			};
-			
-			/*
-			glm::vec3 m_boundingBoxVertices[8];
-			m_boundingBoxVertices[0] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMin().z);
-			m_boundingBoxVertices[1] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMax().z);
-			m_boundingBoxVertices[2] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMin().z);
-			m_boundingBoxVertices[3] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMax().z);
-			m_boundingBoxVertices[4] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMin().z);
-			m_boundingBoxVertices[5] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMax().z);
-			m_boundingBoxVertices[6] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMin().z);
-			m_boundingBoxVertices[7] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMax().z);
-			*/
-			
-			
-			
-			int xpos;
-			int ypos;
-			SDL_GetMouseState(&xpos, &ypos);
-			
-			//std::cout << xpos << " " << ypos << std::endl;
-			
-			glm::vec4 viewport = glm::vec4(0.0f, 0.0f, this->getSizeX(), this->getSizeY());
-			glm::vec3 v0 = glm::unProject(glm::vec3(xpos, ypos, 0.0f), view, projection, viewport);
-			glm::vec3 v1 = glm::unProject(glm::vec3(xpos, this->getSizeY() - ypos, 1.0f), view, projection, viewport);
-			glm::vec3 dir = v1 - v0; 
-			
-			glm::vec3 AABBmin;
-			glm::vec3 AABBmax;
-			glm::vec3 cube;
+			if(!toggleMouseRelative) {
+				glm::vec4 viewport = glm::vec4(0.0f, 0.0f, this->getSizeX(), this->getSizeY());
+				glm::vec3 v0 = glm::unProject(glm::vec3(xpos, ypos, 0.0f), view, projection, viewport);
+				glm::vec3 v1 = glm::unProject(glm::vec3(xpos, this->getSizeY() - ypos, 1.0f), view, projection, viewport);
+				glm::vec3 dir = v1 - v0; 
 				
-			std::vector<glm::vec3> cubesFound;
-			
-			for(int x = 0; x < chunks[i]->CHUNK_SIZE; ++x) {
-				for(int y = 0; y < chunks[i]->CHUNK_SIZE; ++y) {
-					for(int z = 0; z < chunks[i]->CHUNK_SIZE; ++z) {
-						cube = glm::vec3(x,y,z);
-						AABBmin = chunks[i]->getAABBCubeMin(cube.x, cube.y, cube.z);
-						AABBmax = chunks[i]->getAABBCubeMax(cube.x, cube.y, cube.z);
-						
-						if(RayAABBIntersect(v0, dir, AABBmin, AABBmax)) {
-							if(cubesFound.size() < 1) {
-								cubesFound.push_back(cube);
-							} else {
-								if(glm::distance(cube, camera.GetPosition()) < glm::distance(cubesFound[0], camera.GetPosition()))
-								cubesFound[0] = cube;
+				if(RayAABBIntersect(v0, dir, chunks[i]->getBoundingBoxMin(), chunks[i]->getBoundingBoxMax())) {
+					GLubyte indices[] = {0, 1, 1, 5, 5, 4, 4, 0,
+										 2, 3, 3, 7, 7, 6, 6, 2,
+										 0, 2, 1, 3, 5, 7, 4, 6,
+					};
+					
+					GLfloat colors[] = {1.0, 1.0, 1.0,
+										1.0, 1.0, 1.0,
+										1.0, 1.0, 1.0,
+										1.0, 1.0, 1.0,
+										1.0, 1.0, 1.0,
+										1.0, 1.0, 1.0,
+										1.0, 1.0, 1.0,
+										1.0, 1.0, 1.0,
+					};
+					
+					GLfloat colors2[] = {0.0, 0.0, 1.0,
+										0.0, 0.0, 1.0,
+										0.0, 0.0, 1.0,
+										0.0, 0.0, 1.0,
+										0.0, 0.0, 1.0,
+										0.0, 0.0, 1.0,
+										0.0, 0.0, 1.0,
+										0.0, 0.0, 1.0,
+					};
+					
+					/*
+					//AABB of chunk
+					glm::vec3 m_boundingBoxVertices[8];
+					m_boundingBoxVertices[0] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMin().z);
+					m_boundingBoxVertices[1] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMax().z);
+					m_boundingBoxVertices[2] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMin().z);
+					m_boundingBoxVertices[3] = glm::vec3(chunks[i]->getBoundingBoxMin().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMax().z);
+					m_boundingBoxVertices[4] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMin().z);
+					m_boundingBoxVertices[5] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMin().y, chunks[i]->getBoundingBoxMax().z);
+					m_boundingBoxVertices[6] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMin().z);
+					m_boundingBoxVertices[7] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMax().z);
+					*/
+					
+					std::vector<glm::vec3> selectedCube;
+					
+					for(int x = 0; x < chunks[i]->CHUNK_SIZE; ++x) {
+						for(int y = 0; y < chunks[i]->CHUNK_SIZE; ++y) {
+							for(int z = 0; z < chunks[i]->CHUNK_SIZE; ++z) {
+								//skip testing empty air block
+								if((*chunks[i])(x,y,z) == 0) {
+									continue;
+								}
+								
+								glm::vec3 cube = glm::vec3(x,y,z);
+								
+								glm::vec3 AABBmin = chunks[i]->getAABBCubeMin(cube.x, cube.y, cube.z);
+								glm::vec3 AABBmax = chunks[i]->getAABBCubeMax(cube.x, cube.y, cube.z);
+								
+								if(RayAABBIntersect(v0, dir, AABBmin, AABBmax)) {
+									//select within range 10
+									//if(glm::length(camera.GetPosition() - cube) < 10) {
+										if(selectedCube.size() < 1) {
+											selectedCube.push_back(cube);
+										} else {
+											//replace closer cube by the current cube to draw, glm::distance is basically length(p0-p1)
+											if(glm::distance(cube, camera.GetPosition()) < glm::distance(selectedCube[0], camera.GetPosition())) {
+												selectedCube[0] = cube;
+											}
+										}
+									//}
+								}
 							}
-							
-							//std::cout << "ray doesnt intersect" << std::endl;
 						}
 					}
+					
+					if(selectedCube.size() > 0) {
+						glm::vec3 AABBmin = chunks[i]->getAABBCubeMin(selectedCube[0].x, selectedCube[0].y, selectedCube[0].z);
+						glm::vec3 AABBmax = chunks[i]->getAABBCubeMax(selectedCube[0].x, selectedCube[0].y, selectedCube[0].z);
+						
+						//draw cube bbox
+						glm::vec3 boundingBoxVertices[8];
+						boundingBoxVertices[0] = glm::vec3(AABBmin.x, AABBmin.y, AABBmin.z);
+						boundingBoxVertices[1] = glm::vec3(AABBmin.x, AABBmin.y, AABBmax.z);
+						boundingBoxVertices[2] = glm::vec3(AABBmin.x, AABBmax.y, AABBmin.z);
+						boundingBoxVertices[3] = glm::vec3(AABBmin.x, AABBmax.y, AABBmax.z);
+						boundingBoxVertices[4] = glm::vec3(AABBmax.x, AABBmin.y, AABBmin.z);
+						boundingBoxVertices[5] = glm::vec3(AABBmax.x, AABBmin.y, AABBmax.z);
+						boundingBoxVertices[6] = glm::vec3(AABBmax.x, AABBmax.y, AABBmin.z);
+						boundingBoxVertices[7] = glm::vec3(AABBmax.x, AABBmax.y, AABBmax.z);
+						
+						glUseProgram(shaders[1]->GetShader());
+						
+						GLuint vao_0, vbo_0, vbo_1;
+						
+						glGenVertexArrays(1, &vao_0);
+						glGenBuffers(1, &vbo_0);
+						glGenBuffers(1, &vbo_1);
+						
+						glBindVertexArray(vao_0);
+						
+						glBindBuffer(GL_ARRAY_BUFFER, vbo_0);
+						glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 8, &boundingBoxVertices[0], GL_DYNAMIC_DRAW);
+						glEnableVertexAttribArray(0);
+						glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+						
+						glBindBuffer(GL_ARRAY_BUFFER, vbo_1);
+						glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_DYNAMIC_DRAW);
+						glEnableVertexAttribArray(1);
+						glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+						
+						glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "model"), 1, GL_FALSE, glm::value_ptr(model));
+						glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "view"), 1, GL_FALSE, glm::value_ptr(view));
+						glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+						
+						glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, indices);
+					
+						glBindVertexArray(0);
+						
+						glDeleteVertexArrays(1, &vao_0);
+						glDeleteBuffers(1, &vbo_0);
+						glDeleteBuffers(1, &vbo_1);
+											
+						glUseProgram(0);
+						
+						//draw face
+						double x[] = { AABBmin.x, AABBmax.x, AABBmin.x, AABBmax.x, AABBmin.x, AABBmax.x, AABBmin.x, AABBmax.x, AABBmin.x, AABBmin.x, AABBmax.x, AABBmax.x };
+						double y[] = { AABBmin.y, AABBmax.y, AABBmin.y, AABBmax.y, AABBmin.y, AABBmin.y, AABBmax.y, AABBmax.y, AABBmin.y, AABBmax.y, AABBmin.y, AABBmax.y };
+						double z[] = { AABBmin.z, AABBmin.z, AABBmax.z, AABBmax.z, AABBmin.z, AABBmax.z, AABBmin.z, AABBmax.z, AABBmin.z, AABBmax.z, AABBmin.z, AABBmax.z };
+						
+						int selectedFace = -1;
+						double distance = 100;
+						
+						glm::vec3 AABBFaceMin;
+						glm::vec3 AABBFaceMax;
+						
+						for (int i = 0; i < 6; i++)
+						{
+							glm::vec3 min(x[i * 2], y[i * 2], z[i * 2]);
+							glm::vec3 max(x[i * 2 + 1], y[i * 2 + 1], z[i * 2 + 1]);
+							
+							glm::vec3 center(min.x == max.x ? min.x : min.x + (max.x-min.x) / 2, min.y == max.y ? min.y : min.y + (max.y-min.y) / 2, min.z == max.z ? min.z : min.z + (max.z-min.z) / 2);
+							
+							double d = glm::distance(center, camera.GetPosition());
+							if(RayAABBIntersect(v0, dir, min, max) && d < distance) {
+								selectedFace = i;
+								distance = d;
+								
+								AABBFaceMin = min;
+								AABBFaceMax = max;
+							}
+						}
+						
+						AABBmin = AABBFaceMin;
+						AABBmax = AABBFaceMax;
+								
+						//draw cube bbox
+						boundingBoxVertices[0] = glm::vec3(AABBmin.x, AABBmin.y, AABBmin.z);
+						boundingBoxVertices[1] = glm::vec3(AABBmin.x, AABBmin.y, AABBmax.z);
+						boundingBoxVertices[2] = glm::vec3(AABBmin.x, AABBmax.y, AABBmin.z);
+						boundingBoxVertices[3] = glm::vec3(AABBmin.x, AABBmax.y, AABBmax.z);
+						boundingBoxVertices[4] = glm::vec3(AABBmax.x, AABBmin.y, AABBmin.z);
+						boundingBoxVertices[5] = glm::vec3(AABBmax.x, AABBmin.y, AABBmax.z);
+						boundingBoxVertices[6] = glm::vec3(AABBmax.x, AABBmax.y, AABBmin.z);
+						boundingBoxVertices[7] = glm::vec3(AABBmax.x, AABBmax.y, AABBmax.z);
+						
+						glUseProgram(shaders[1]->GetShader());
+						
+						glGenVertexArrays(1, &vao_0);
+						glGenBuffers(1, &vbo_0);
+						glGenBuffers(1, &vbo_1);
+						
+						glBindVertexArray(vao_0);
+						
+						glBindBuffer(GL_ARRAY_BUFFER, vbo_0);
+						glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 8, &boundingBoxVertices[0], GL_DYNAMIC_DRAW);
+						glEnableVertexAttribArray(0);
+						glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+						
+						glBindBuffer(GL_ARRAY_BUFFER, vbo_1);
+						glBufferData(GL_ARRAY_BUFFER, sizeof(colors2), colors2, GL_DYNAMIC_DRAW);
+						glEnableVertexAttribArray(1);
+						glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+						
+						glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "model"), 1, GL_FALSE, glm::value_ptr(model));
+						glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "view"), 1, GL_FALSE, glm::value_ptr(view));
+						glUniformMatrix4fv(glGetUniformLocation(shaders[1]->GetShader(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+						
+						glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, indices);
+					
+						glBindVertexArray(0);
+						
+						glDeleteVertexArrays(1, &vao_0);
+						glDeleteBuffers(1, &vbo_0);
+						glDeleteBuffers(1, &vbo_1);
+											
+						glUseProgram(0);
+						
+						
+					}
 				}
-			}
-		
-			for(int j = 0; j < cubesFound.size(); ++j) {
-				glm::vec3 m_boundingBoxVertices[8];
-				m_boundingBoxVertices[0] = glm::vec3(chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
-				m_boundingBoxVertices[1] = glm::vec3(chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
-				m_boundingBoxVertices[2] = glm::vec3(chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
-				m_boundingBoxVertices[3] = glm::vec3(chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
-				m_boundingBoxVertices[4] = glm::vec3(chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
-				m_boundingBoxVertices[5] = glm::vec3(chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
-				m_boundingBoxVertices[6] = glm::vec3(chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMin(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
-				m_boundingBoxVertices[7] = glm::vec3(chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).x, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).y, chunks[i]->getAABBCubeMax(cubesFound[j].x, cubesFound[j].y, cubesFound[j].z).z);
-			
-				std::vector<glm::vec3> bbox;
-				bbox.push_back(m_boundingBoxVertices[0]);
-				bbox.push_back(m_boundingBoxVertices[1]);
-				bbox.push_back(m_boundingBoxVertices[2]);
-				bbox.push_back(m_boundingBoxVertices[3]);
-				bbox.push_back(m_boundingBoxVertices[4]);
-				bbox.push_back(m_boundingBoxVertices[5]);
-				bbox.push_back(m_boundingBoxVertices[6]);
-				bbox.push_back(m_boundingBoxVertices[7]);
-				
-				
-				glUseProgram(shaders[0]->GetShader());
-				
-				glEnable(GL_PROGRAM_POINT_SIZE);
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				
-				GLuint vao_0, vbo_0, vbo_1;
-				
-				glGenVertexArrays(1, &vao_0);
-				glGenBuffers(1, &vbo_0);
-				glGenBuffers(1, &vbo_1);
-				
-				glBindVertexArray(vao_0);
-				
-				glBindBuffer(GL_ARRAY_BUFFER, vbo_0);
-				glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * bbox.size(), &bbox[0], GL_DYNAMIC_DRAW);
-				glEnableVertexAttribArray(0);
-				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-				
-				glBindBuffer(GL_ARRAY_BUFFER, vbo_1);
-				glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_DYNAMIC_DRAW);
-				glEnableVertexAttribArray(1);
-				glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-				
-				glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "model"), 1, GL_FALSE, glm::value_ptr(model));
-				glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "view"), 1, GL_FALSE, glm::value_ptr(view));
-				glUniformMatrix4fv(glGetUniformLocation(shaders[0]->GetShader(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-				
-				//glDrawArrays(GL_POINTS, 0, 8);
-				glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, indices);
-			
-				glBindVertexArray(0);
-				
-				glDeleteVertexArrays(1, &vao_0);
-				glDeleteBuffers(1, &vbo_0);
-				glDeleteBuffers(1, &vbo_1);
-				
-				glDisable(GL_PROGRAM_POINT_SIZE);
-				glDisable(GL_BLEND);
-				
-				glUseProgram(0);
 			}
 		}
 	
@@ -473,31 +535,7 @@ void App::showFPS()
     }
 }
 
-glm::vec3 App::ScreenToWorld(glm::vec3 screen, glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
-{
-	GLint viewPort[4];
-	glGetIntegerv(GL_VIEWPORT, viewPort);
-	
-    // compute the inverse of the view and projection matrix
-    glm::mat4 m = glm::inverse(viewMatrix * projectionMatrix);
- 
-    // transform the screen space co-ordinates into values normalized between -1 and +1
-    glm::vec4 input;
-    input.x = (screen.x - (float)viewPort[0]) / (float)viewPort[2] * 2.0f - 1.0f;
-    input.y = (screen.y - (float)viewPort[1]) / (float)viewPort[3] * 2.0f - 1.0f;
-    input.z = 2.0f * screen.z - 1.0f;
-    input.w = 1.0f;
- 
-    // return the object co-ordinates
-    glm::vec4 output = input * m;
-    if (output[3] == 0.0) return glm::vec3(0);
- 
-    float scale = 1.0f / output.w;
- 
-    return glm::vec3(output.x * scale, output.y * scale, output.z * scale);
-}
-
-bool App::RayAABBIntersect(glm::vec3 rayOrig, glm::vec3 rayDir, glm::vec3 min, glm::vec3 max) 
+bool App::RayAABBIntersect(const glm::vec3& rayOrig, const glm::vec3& rayDir, const glm::vec3& min, const glm::vec3& max)
 { 
     float tmin = (min.x - rayOrig.x) / rayDir.x; 
     float tmax = (max.x - rayOrig.x) / rayDir.x; 
