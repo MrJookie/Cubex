@@ -44,8 +44,12 @@ namespace Cubex {
 			int GetVertexCount() const;
 			
 			//int& getBlockSide(const int x, const int y, const int z);
-						
-			static const int CHUNK_SIZE = 16;
+			static const int CHUNK_SIZE = 32;
+				
+			static const int CHUNK_SIZE_X = 16;
+			static const int CHUNK_SIZE_Y = 256;
+			static const int CHUNK_SIZE_Z = 16;
+			
 			//static const int BLOCK_SIZE = 1;
 			
 			int* m_blocks;

@@ -74,7 +74,7 @@ void App::init()
     cx::Shader shader2("Assets/frustum.vs", "Assets/frustum.fs");
     shaders.push_back(&shader2);
     
-    cx::Camera camera(glm::vec3(0.0f, 150.0f, 50.0f));
+    cx::Camera camera(glm::vec3(10.0f, 10.0f, 50.0f));
     
     //int WORLD_SIZE = 16;
     //int CHUNK_SIZE = 16;
@@ -130,7 +130,10 @@ void App::init()
 		chunks.push_back(chunk);
 	}
 	
-    bool toggleMouseRelative = false;
+	std::vector<glm::vec3> selectedCube;
+	int selectedFace;
+	
+    bool toggleMouseRelative = true;
     bool toggleFullscreen = true;
     bool toggleWireframe = true;
     
@@ -207,30 +210,88 @@ void App::init()
                     }
                     break;
                     
+                    /*
                     case SDLK_r:
                     {
 						(*chunks[0])(ax++, 0, 0) = 0;
 						chunks[0]->CreateMesh(0, true);
 					}
 					break;
+					*/
                 }
-            }
-            else if(e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT) {
-                SDL_ShowCursor(SDL_DISABLE);
-                SDL_SetRelativeMouseMode(SDL_TRUE);
-                toggleMouseRelative = true;
+            } else if(e.type == SDL_MOUSEBUTTONDOWN) {
+				if(e.button.button == SDL_BUTTON_LEFT) {
+					if(!selectedCube.empty()) {
+						int x = 0;
+						int y = 0;
+						int z = 0;
+						
+						switch(selectedFace) {
+							case 0:
+								//-z
+								z = -1;
+							break;
+								
+							case 1:
+								//+z
+								z = 1;
+							break;
+							
+							case 2:
+								//-y
+								y = -1;
+							break;
+								
+							case 3:
+								//+y
+								y = 1;
+							break;
+							
+							case 4:
+								//-x
+								x = -1;
+							break;
+							
+							case 5:
+								//+x
+								x = 1;
+							break;
+						}
+						
+						(*chunks[0])(selectedCube[0].x + x, selectedCube[0].y + y, selectedCube[0].z + z) = 1;
+												
+						std::cout << "X: " << selectedCube[0].x << 
+									 " Y: " << selectedCube[0].y << 
+									 " Z: " << selectedCube[0].z << 
+									 " face: " << selectedFace << std::endl;
+						
+						chunks[0]->CreateGreedyMesh();
+					}
+				}
+				
+				if(e.button.button == SDL_BUTTON_RIGHT) {
+					if(!selectedCube.empty()) {
+						(*chunks[0])(selectedCube[0].x, selectedCube[0].y, selectedCube[0].z) = 0;
+												
+						std::cout << "X: " << selectedCube[0].x << 
+									 " Y: " << selectedCube[0].y << 
+									 " Z: " << selectedCube[0].z << 
+									 " face: " << selectedFace << std::endl;
+						
+						chunks[0]->CreateGreedyMesh();
+					}
+				}
+            } else if(e.type == SDL_MOUSEBUTTONUP) {
+				if(e.button.button == SDL_BUTTON_LEFT) {
 
-                skipMouseResolution = 2;
-            }
-            else if(e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_RIGHT) {
-                SDL_ShowCursor(SDL_ENABLE);
-                SDL_SetRelativeMouseMode(SDL_FALSE);
-                toggleMouseRelative = false;
+				}
+				
+				if(e.button.button == SDL_BUTTON_RIGHT) {
 
-                skipMouseResolution = 2;
+				}
             }
         }
-
+        
         glViewport(0, 0, m_sizeX, m_sizeY);
 
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -276,22 +337,24 @@ void App::init()
         }
         
         glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), m_sizeX/(float)m_sizeY, 0.1f, 1000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), this->getSizeX()/(float)this->getSizeY(), 0.1f, 1000.0f);
         glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, 0.0));
 
         camera.ExtractFrustumPlanes(view, projection);
         
         //std::cout << "AABB intersects: " << camera.AABBIntersectsFrustum(chunk.m_boundingBoxMin, chunk.m_boundingBoxMax) << std::endl;
         
+        selectedCube.clear();
+        
         for(int i = 0; i < chunks.size(); ++i) {
 			//if(camera.AABBIntersectsFrustum(chunks[i]->m_boundingBoxMin, chunks[i]->m_boundingBoxMax)) {
 				chunks[i]->DrawChunk(glm::vec3(1.0, 0.0, 0.0), shaders[0]->GetShader(), model, view, projection);
 			//}
 			
-			if(!toggleMouseRelative) {
+			if(toggleMouseRelative) {
 				glm::vec4 viewport = glm::vec4(0.0f, 0.0f, this->getSizeX(), this->getSizeY());
-				glm::vec3 v0 = glm::unProject(glm::vec3(xpos, ypos, 0.0f), view, projection, viewport);
-				glm::vec3 v1 = glm::unProject(glm::vec3(xpos, this->getSizeY() - ypos, 1.0f), view, projection, viewport);
+				glm::vec3 v0 = glm::unProject(glm::vec3(this->getSizeX()/2.0f, this->getSizeY()/2.0f, 0.0f), view, projection, viewport);
+				glm::vec3 v1 = glm::unProject(glm::vec3(this->getSizeX()/2.0f, this->getSizeY() - this->getSizeY()/2.0f, 1.0f), view, projection, viewport);
 				glm::vec3 dir = v1 - v0; 
 				
 				if(RayAABBIntersect(v0, dir, chunks[i]->getBoundingBoxMin(), chunks[i]->getBoundingBoxMax())) {
@@ -332,9 +395,7 @@ void App::init()
 					m_boundingBoxVertices[6] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMin().z);
 					m_boundingBoxVertices[7] = glm::vec3(chunks[i]->getBoundingBoxMax().x, chunks[i]->getBoundingBoxMax().y, chunks[i]->getBoundingBoxMax().z);
 					*/
-					
-					std::vector<glm::vec3> selectedCube;
-					
+										
 					for(int x = 0; x < chunks[i]->CHUNK_SIZE; ++x) {
 						for(int y = 0; y < chunks[i]->CHUNK_SIZE; ++y) {
 							for(int z = 0; z < chunks[i]->CHUNK_SIZE; ++z) {
@@ -419,7 +480,7 @@ void App::init()
 						double y[] = { AABBmin.y, AABBmax.y, AABBmin.y, AABBmax.y, AABBmin.y, AABBmin.y, AABBmax.y, AABBmax.y, AABBmin.y, AABBmax.y, AABBmin.y, AABBmax.y };
 						double z[] = { AABBmin.z, AABBmin.z, AABBmax.z, AABBmax.z, AABBmin.z, AABBmax.z, AABBmin.z, AABBmax.z, AABBmin.z, AABBmax.z, AABBmin.z, AABBmax.z };
 						
-						int selectedFace = -1;
+						selectedFace = -1;
 						double distance = 100;
 						
 						glm::vec3 AABBFaceMin;
@@ -441,6 +502,8 @@ void App::init()
 								AABBFaceMax = max;
 							}
 						}
+						
+						//std::cout << selectedFace << std::endl;
 						
 						AABBmin = AABBFaceMin;
 						AABBmax = AABBFaceMax;

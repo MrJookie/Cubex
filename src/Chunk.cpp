@@ -36,8 +36,8 @@ namespace Cubex {
 	
 	int& Chunk::operator()(const int x, const int y, const int z)
 	{
-		//int index = x + y * CHUNK_SIZE + z * CHUNK_SIZE * CHUNK_SIZE;
-		int index = x + CHUNK_SIZE * y + CHUNK_SIZE * CHUNK_SIZE * z;
+		int index = x + CHUNK_SIZE * (y + CHUNK_SIZE * z);
+		//int index = x + CHUNK_SIZE * y + CHUNK_SIZE * CHUNK_SIZE * z;
 		if(index > CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) {
 			throw std::string("out of index");
 		}
@@ -126,6 +126,13 @@ namespace Cubex {
 	{
 		using milli = std::chrono::milliseconds;
 		auto start = std::chrono::high_resolution_clock::now();
+		
+		vertices.clear();
+		indices.clear();
+		colors.clear();
+		normals.clear();
+		texcoords.clear();
+		lastVertex = 0;
 		
 		int Xneg = 0;
 		int Xpos = 1;
