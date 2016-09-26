@@ -30,11 +30,11 @@ namespace Cubex {
 			Chunk();
 			~Chunk();
 			
-			int& operator()(const int x, const int y, const int z);
+			char& operator()(const int x, const int y, const int z);
 			
 			//rebuild()
 			
-			void CreateMesh(int chunkID, bool optimize);
+			void CreateMesh(bool optimize);
 			void CreateGreedyMesh();
 			void CreateCube(int x, int y, int z, bool Xneg, bool Xpos, bool Yneg, bool Ypos, bool Zneg, bool Zpos);
 			
@@ -52,7 +52,7 @@ namespace Cubex {
 			
 			//static const int BLOCK_SIZE = 1;
 			
-			int* m_blocks;
+			char* m_blocks;
 			//int* m_blocks_side;
 			
 			glm::vec3 getBoundingBoxMin() const;
@@ -63,11 +63,14 @@ namespace Cubex {
 			
 			glm::vec3 getAABBCubeMin(const int x, const int y, const int z);
 			glm::vec3 getAABBCubeMax(const int x, const int y, const int z);
+			
+			glm::vec3 m_pos;
 									
 		private:
 			void initBuffers();
 			
 			int lastVertex = 0;
+			int m_chunkID = 0;
 			
 			GLuint vao, vbo[4], ebo;
 			std::vector<glm::vec3> vertices;

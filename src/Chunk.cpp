@@ -3,12 +3,12 @@
 namespace Cubex {
     Chunk::Chunk()
     {
-		m_blocks = new int[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
+		m_blocks = new char[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
 		if(!m_blocks) {
 			throw std::string("failed to allocate world size");
 		}
 		
-		std::memset(m_blocks, 0, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(int));
+		std::memset(m_blocks, 0, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(char));
 		
 		/*
 		m_blocks_side = new int[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
@@ -34,7 +34,7 @@ namespace Cubex {
 		glDeleteVertexArrays(1, &vao);
 	}
 	
-	int& Chunk::operator()(const int x, const int y, const int z)
+	char& Chunk::operator()(const int x, const int y, const int z)
 	{
 		int index = x + CHUNK_SIZE * (y + CHUNK_SIZE * z);
 		//int index = x + CHUNK_SIZE * y + CHUNK_SIZE * CHUNK_SIZE * z;
@@ -45,7 +45,7 @@ namespace Cubex {
 		return m_blocks[index];
 	}
 	
-	void Chunk::CreateMesh(int chunkID, bool optimize)
+	void Chunk::CreateMesh(bool optimize)
 	{
 		vertices.clear();
 		indices.clear();
@@ -53,9 +53,6 @@ namespace Cubex {
 		normals.clear();
 		texcoords.clear();
 		
-		int chunkPos = chunkID * CHUNK_SIZE;
-		
-		using milli = std::chrono::milliseconds;
 		auto start = std::chrono::high_resolution_clock::now();
 		
 		bool displayInnerFaces = optimize;
@@ -101,14 +98,14 @@ namespace Cubex {
 							Zpos = ((*this)(x, y, z+1) > 0) ? false : true;
 					}
 					
-					this->CreateCube(x, y, z + chunkPos, Xneg, Xpos, Yneg, Ypos, Zneg, Zpos);
+					this->CreateCube(x, y, z, Xneg, Xpos, Yneg, Ypos, Zneg, Zpos);
 				}
 			}
 		}
 		
 		auto finish = std::chrono::high_resolution_clock::now();
 		std::cout << "CreateMesh() took "
-				  << std::chrono::duration_cast<milli>(finish - start).count()
+				  << std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count()
 				  << " milliseconds\n";
 		
 		if(lastVertex > 0) {
@@ -186,8 +183,8 @@ namespace Cubex {
 							}
 							*/
 													
-							int voxelFaceSide = side;
-							int voxelFaceSide1 = side;
+							//int voxelFaceSide = side;
+							//int voxelFaceSide1 = side;
 							
 							
 							mask[n++] = ((voxelFace != 0 && voxelFace1 != 0 && voxelFace == voxelFace1)) 
@@ -269,6 +266,8 @@ namespace Cubex {
 				}
 			}
 		}
+		
+		m_chunkID++;
 		
 		auto finish = std::chrono::high_resolution_clock::now();
 		std::cout << "CreateGreedyMesh() took "
